@@ -15,8 +15,6 @@
 (defn to-httpkit
   [req-chan]
   (fn httpkit-adapter [req]
-    (println "lolhi")
-    (flush)
     (http-kit/with-channel req http-kit-chan
       (let [resp-chan (async/chan)
             error-chan (async/chan)]
@@ -55,11 +53,7 @@
         (while true
           (let [req (async/<! req-chan)]
             (try
-                (print (str "Making an attempt!"))
-                (flush)
               (let [resp (handler req)]
-                (print (str "Handler returned " resp))
-                (flush)
                 (if resp
                   (async/>! (:async-response req) resp)
                   (async/>! (:async-error req)
@@ -112,7 +106,7 @@
 (defn work-shed
   "Sheds work when there are more than `threshold-concurrency` number
    of outstanding requests"
-  [async-middleware threshold-concurrency]
+  [async-middleware threshold-concurrency shed-response]
   (let [req-chan (async/chan)
         outstanding (atom 0)]
     (async/go
@@ -120,15 +114,16 @@
         (let [req (async/<! req-chan)
               resp-chan (async/chan)
               error-chan (async/chan)]
-          (swap! outstanding inc)
-          (when (< @outstanding threshold-concurrency)
-            (async/go (async/alt!
-                        resp-chan ([resp] (swap! outstanding dec) (async/>! (:async-response req) resp))
-                        error-chan ([e] (swap! outstanding dec) (async/>! (:async-error req) e))))
-            (async/>! async-middleware
-                      (assoc req
-                             :async-response resp-chan
-                             :async-error error-chan))))))
+          (if (< @outstanding threshold-concurrency)
+            (do (swap! outstanding inc)
+                (async/go (async/alt!
+                            resp-chan ([resp] (swap! outstanding dec) (async/>! (:async-response req) resp))
+                            error-chan ([e] (swap! outstanding dec) (async/>! (:async-error req) e))))
+                (async/>! async-middleware
+                          (assoc req
+                                 :async-response resp-chan
+                                 :async-error error-chan)))
+            (async/>! (:async-response req) shed-response)))))
     req-chan))
 
 #_(defn work-shed
@@ -163,7 +158,7 @@
   (-> ;(constant-response {:status 404 :body "nononon!"})
       (sync->async-adapter #'ring-app)
       (sync->async-middleware wrap-params)
-      ;(work-shed 100)
+      (work-shed 3 {:status 503 :body "work shedding"})
       (to-httpkit)))
 
 (comment
