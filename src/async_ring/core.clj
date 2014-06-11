@@ -1,10 +1,16 @@
 (ns async-ring.core
+  "This namespace provides a core.async API for Ring. It allows you define and nest synchronous
+   and async ring handlers to create efficient, async servers built on http-kit.
+
+   Async handlers are just core.async channels! To use them, put ring request maps into them.
+   Each request map must contain 2 additional keys, :async-response and :async-error, which must
+   both be channels. For each ring request map you put into the input channel, you will recieve
+   either a response map via the :async-response channel or a Throwable via the :async-error
+   channel."
   (:require [clojure.core.async :as async]
             [clojure.stacktrace]
-            [compojure.core :refer (GET defroutes)]
-            [ring.middleware.params :refer (wrap-params)]
-            [hiccup.core :refer (html)]
             [clojure.tools.logging :as log]
+            [ring.util.response :refer (response status)]
             [org.httpkit.server :as http-kit]))
 
 ;;; The fundamental unit is a channel. It expects to recieve Ring request maps, which each contain
@@ -13,6 +19,7 @@
 ;;;
 
 (defn to-httpkit
+  "Allows the given async handler to be used on http-kit"
   [req-chan]
   (fn httpkit-adapter [req]
     (http-kit/with-channel req http-kit-chan
@@ -24,9 +31,14 @@
         (async/go
           (async/alt!
             resp-chan ([resp]
-                       (http-kit/send! http-kit-chan resp))
+                       (if resp
+                         (http-kit/send! http-kit-chan resp)
+                         (http-kit/send! http-kit-chan (-> (response "nil response body in async-ring.core/to-httpkit")
+                                                           (status 500)))))
             error-chan ([e]
                         (clojure.stacktrace/print-cause-trace e)
+                        (http-kit/send! http-kit-chan (-> (response (str "Encountered error! See log."))
+                                                          (status 500)))
                         (log/error e))))))))
 
 (defn async->sync-adapter
@@ -69,6 +81,7 @@
     (sync->async-adapter (apply middleware handler args))))
 
 (defn constant-response
+  "Returns an async-handler that always returns the given response."
   [response]
   (let [req-chan (async/chan)]
     (async/go
@@ -142,27 +155,33 @@
       :resp (fn [resp] (swap! outstanding dec) resp)
       :error (fn [e] (swap! outstanding dec) e))))
 
+(defn route-concurrently-
+  [pairs]
+  (let [req-chan (async/chan)]
+    (async/go
+      (while true
+        (let [req (async/<! req-chan)
+              [guard fwd] (some (fn [[^String guard :as pair]]
+                                  (when (.startsWith (:uri req "") guard)
+                                    pair))
+                                pairs)
+              uri-suffix (.substring ^String (:uri req) (count guard))
+              uri-suffix (if (= uri-suffix "")
+                           "/"
+                           uri-suffix)]
+          (async/>! fwd (assoc req :uri uri-suffix)))))
+    req-chan))
 
-(defroutes ring-app
-  (GET "/" [q]
-       (html [:html
-              [:body
-               (concat
-                 (when q
-                   [[:p (str "To " q)]])
-                 [[:p
-                   "Hello world, from Ring"]])]])))
+(defmacro route-concurrently
+  "TODO: We must consider whether we should route and pass along the prefix or not,
+   and whether we should force the inclusion of the trailing slash (because the
+   standalone / is the start and the end, so what's up with that?)"
+  [& args]
+  (let [pairs (partition 2 args)
+        compiled (mapv (fn [[guard fwd]]
+                         (when-not (string? guard)
+                           (throw (ex-info "guard must be a string" {:guard guard})))
+                         [guard fwd])
+                       pairs)]
+    `(route-concurrently- ~compiled)))
 
-
-(def app
-  (-> ;(constant-response {:status 404 :body "nononon!"})
-      (sync->async-adapter #'ring-app)
-      (sync->async-middleware wrap-params)
-      (work-shed 3 {:status 503 :body "work shedding"})
-      (to-httpkit)))
-
-(comment
-  (def server (http-kit/run-server #'app {:port 8080}))
-
-  (server)
-  )

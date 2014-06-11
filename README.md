@@ -6,6 +6,10 @@ Like Ring, but async.
 
 FIXME
 
+## TODO
+
+We need to add support for async-jetty (see ninjudd/ring-async) and nginx-clojure
+
 ## License
 
 Copyright © 2014 FIXME
