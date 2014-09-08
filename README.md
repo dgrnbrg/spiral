@@ -134,10 +134,10 @@ async middleware.
 
 (def async-ring-app
   (-> (async-ring.core/sync->async-adapter traditional-ring-app
-                                           {:parallelism 10
+                                           {:parallelism 5
                                             :buffer-size 5}))
       (async-ring.core/sync->async-middleware wrap-params
-                                              {:parallelism 2
+                                              {:parallelism 10
                                                :buffer-size 100}))
 
 (def server (http-kit/run-server (async-ring.adapters.to-httpkit async-ring-app)
@@ -208,6 +208,31 @@ These priorities are used to determine which request will be handled from the
 pool's buffer.
 
 The Beauty Router should be flexible enough to solve most QoS problems; nevertheless, Pull Requests are welcome to improve the functionality!
+
+## Comparison with Pedestal
+
+At first glance, Async Ring and Pedestal seem very similar--they're both frameworks
+for building asynchronous HTTP applications using a slightly modified Ring API. In
+this section, we'll look at some of the differences between Pedestal and Async Ring.
+
+1. Concurrency mechanism: in Pedestal, you write pure functions for each request lifecycle state transition, and the Pedestal server schedules these function for you. In
+Async Ring, you write core.async code, so the control flow of your handler is exactly
+how you write it. In other words, you can using `<!` and `>!` to block wherever you
+want.
+1. Performance: Pedestal and Async Ring both allow for many more connections than
+threads, thus enabling many more concurrenct connections that Ring.
+1. Composition: in Pedestal, interceptors are placed in a queue for executor. This
+allows for interceptions to know the entire queue of execution as it stands, at
+the expense of always encoding the request processing as a queue. In Async Ring,
+handlers are only identified by their input channel. Thus, Async Ring handlers cannot
+automatically know what other executors are in the execution pipeline. On the other
+hand, Async Ring handlers can express more complex worker-pool and dynamically routed
+topologies in a single expression, rather than requiring dynamic interceptor
+middleware.
+1. Chaining behavior: in Pedestal, the interceptor framework handles chaining
+behavior, which allows for greater programmatic insight and control. In Async Ring,
+function composition handles chaining behavior, just like in regular Ring.
+1. Compatibility with Ring: in Pedestal, you must either port your Ring middlewares, or deal with the fact that they cannot be paused or migrate threads. In Async Ring, all existing Ring middleware is supported.
 
 ## License
 
