@@ -12,6 +12,8 @@
             [clojure.tools.logging :as log]
             [ring.util.servlet :as servlet]))
 
+;; This code is adapted from https://github.com/ninjudd/ring-async
+
 (defn to-jetty
   [async-handler]
   (fn [request]
