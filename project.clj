@@ -5,7 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :jvm-opts ^:replace ["-Xmx4g" "-server"]
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [http-kit "2.1.16"]
+                 [http-kit "2.1.19"]
                  [org.clojure/tools.logging "0.2.6"]
                  [ring "1.2.2"]
                  [compojure "1.1.7"]
