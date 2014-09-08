@@ -83,6 +83,15 @@
 
 (provide-process-middleware params/wrap-params :pre)
 (provide-process-middleware file-info/wrap-file-info :post)
+(provide-process-middleware
+  file-info/wrap-file-info :both
+  (fn wrap-init [& args])
+  (fn wrap-pre
+    [state request & args]
+    [request request])
+  (fn wrap-post
+    [state response & [mime-types]]
+    (file-info/file-info-response response state mime-types)))
 (provide-process-middleware file/wrap-file :pre)
 (provide-process-middleware keyword-params/wrap-keyword-params :pre)
 (provide-process-middleware multipart-params/wrap-multipart-params :pre)
@@ -153,45 +162,17 @@
 (provide-process-middleware
   session/wrap-session :both
   (fn wrap-init
-    ([] {})
+    ([] (wrap-init {}))
     ([options]
-     {:store        (options :store (ring.middleware.session.memory/memory-store))
-      :cookie-name  (options :cookie-name "ring-session")
-      :session-root (options :root "/")
-      :cookie-attrs (merge (options :cookie-attrs) {:path (options :root "/")})}))
+     (session/session-options options)))
   (fn wrap-pre
-    ([state request]
-     (wrap-pre state request {}))
-    ([state request options]
-     (let [request (if (request :cookies)
-                     request
-                     (assoc request :cookies (#'cookies/parse-cookies request)))
-           sess-key (get-in request [:cookies (:cookie-name state) :value])
-           session  (ring.middleware.session.store/read-session (:store state) sess-key)
-           request  (assoc request :session session)]
-       [(assoc state
-               :sess-key sess-key
-               :session session)
-        request])))
+    ([opts request]
+     (wrap-pre opts request {}))
+    ([opts request _]
+     (let [req (session/session-request request opts)]
+       [[opts req] req])))
   (fn wrap-post
     ([state response]
      (wrap-post state response {}))
-    ([state response options]
-     (if-let [response response]
-       (-> (let [sess-key* (if (contains? response :session)
-                             (if-let [session (response :session)]
-                               (ring.middleware.session.store/write-session
-                                 (:store state) (:sess-key state) (:session state))
-                               (if (:sess-key state)
-                                 (ring.middleware.session.store/delete-session
-                                   (:store state) (:sess-key state)))))
-                 response (dissoc response :session)
-                 cookie   {(:cookie-name state)
-                           (merge (:cookie-attrs state)
-                                  (response :session-cookie-attrs)
-                                  {:value sess-key*})}]
-             (if (and sess-key* (not= (:sess-key state) sess-key*))
-               (assoc response :cookies (merge (response :cookies) cookie))
-               response))
-           (#'cookies/set-cookies)
-           (dissoc :cookies))))))
+    ([[opts req] response _]
+     (session/session-response response req opts))))
