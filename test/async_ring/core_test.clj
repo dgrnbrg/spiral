@@ -1,4 +1,7 @@
 (ns async-ring.core-test
+  "Isn't testing fun? This is just one big inbred testing file, because it's
+   much easier to start each server and run the full test battery against them.
+   Eventually, this could be split into several test files."
   (:require [clojure.test :refer :all]
             [compojure.core :refer (ANY GET defroutes routes)]
             [org.httpkit.server :as http-kit]  
@@ -6,6 +9,10 @@
             [hiccup.core :refer (html)]
             [ring.middleware.params :refer (wrap-params)]
             [ring.util.response :refer (response content-type)]
+            [async-ring.beauty :refer :all]
+            [async-ring.adapters.http-kit :refer :all]
+            [async-ring.adapters.jetty :refer :all]
+            [async-ring.experimental :refer :all]
             [async-ring.core :refer :all]))
 
 (defroutes ring-app
@@ -37,11 +44,18 @@
            (finally
              (server#)))))
      (testing "jetty"
-       (let [server# (run-jetty-async ~app {:port 12438 :join? false})]
+       (let [server# (run-jetty-async (to-jetty ~app) {:port 12438 :join? false})]
          (try
            ~@body
            (finally
              (.stop server#)))))))
+
+(deftest jetty-sync-mode
+  (let [server (run-jetty-async (fn [req] {:status 200 :body "sync-hi" :headers {"Content-Type" "text/plain"}}) {:port 12438 :join? false})]
+    (try
+      (is (= (:body (deref (http/request {:url "http://localhost:12438" :method :get}))) "sync-hi"))
+      (finally
+        (.stop server)))))
 
 (comment
   (def srv (http-kit/run-server
@@ -84,5 +98,26 @@
                      ;;TODO figure out what the correct behavior for this case is
                      ;(is (= (:body (request :post "http://localhost:12438/app")) "invalid"))
                      (is (= (:body (request :get "http://localhost:12438/app/")) "all ok"))))
+
+(defn string-response
+  [msg]
+  {:status 200 :body msg :headers {"Content-Type" "text-plain"}})
+
+(deftest beauty-router-test
+  (scaffold-servers (beauty-router
+                      (routes
+                        (GET "/" []
+                             (beauty-route :normal
+                                           (string-response "root resp")))
+                        (GET "/boring" []
+                             (string-response "boring"))
+                        (GET "/test/:code" [code]
+                             (beauty-route :test
+                                           (string-response (str "test " code)))))
+                      {:normal {:parallelism 1}
+                       :test {:parallelism 10}})
+                    (is (= (:body (request :get "http://localhost:12438/")) "root resp"))
+                    (is (= (:body (request :get "http://localhost:12438/boring")) "boring"))
+                    (is (= (:body (request :get "http://localhost:12438/test/blah")) "test blah"))))
 
 ;; TODO: test work shedder
