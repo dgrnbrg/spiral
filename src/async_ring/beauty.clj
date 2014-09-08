@@ -8,16 +8,18 @@
   "This defers its body to run on the specied pool, with the optionally specified
    priority. If you want to execute side-effects in the body, you'll want to wrap it
    in a do."
+  ;; Note that we prioritize so that a higher user-provided priority runs sooner,
+  ;; and the oldest requests run sooner
   ([pool body]
    `{::beauty true
      :thunk (fn [] ~body)
      :pool ~pool
-     :priority 5})
+     :priority [5 (- (System/currentTimeMillis))]})
   ([pool priority body]
    `{::beauty true
      :thunk (fn [] ~body)
      :pool ~pool
-     :priority ~priority}))
+     :priority [~priority (- (System/currentTimeMillis))]}))
 
 (defn beauty-router
   "Creates a beauty-router pool. The pools-config should be a map, where the keys
