@@ -51,7 +51,7 @@
                   (async/>! (:async-error req)
                             (ex-info "Handler returned null"
                                      {:req req :handler handler}))))
-              (catch Exception e
+              (catch Throwable e
                 (async/>! (:async-error req) e)))))))
     req-chan))
 
@@ -91,6 +91,73 @@
   [handler options async-middleware & args]
   (let [async-handler (sync->async-adapter handler options)]
     (async->sync-adapter (apply async-middleware async-handler args))))
+
+(defn sync->async-preprocess-middleware
+  "This is like sync->async-middleware, except it skips the processing **after**
+   it calls the child function."
+  [async-handler sync-preprocess-middleware
+   {:keys [parallelism buffer-size]
+    :or {parallelism 5
+         buffer-size 10}
+    :as options}
+   & args]
+  (let [req-chan (async/chan buffer-size)
+        forward-handler (apply sync-preprocess-middleware
+                               (fn fwd [req]
+                                 {::fwd req})
+                               args)]
+    (dotimes [i parallelism]
+      (async/go
+        (while true
+          (let [req (async/<! req-chan)]
+            (try
+              (let [{to-fwd ::fwd :as resp} (forward-handler req)]
+                (if to-fwd
+                  (async/>! async-handler to-fwd)
+                  (async/>! (:async-response req) resp)))
+              (catch Throwable e
+                (async/>! (:async-error req) e)))))))
+    req-chan))
+
+(defn sync->async-postprocess-middleware
+  "This is like sync->async-middleware, except it skips the processing **before**
+   it calls the child function."
+  [async-handler sync-postprocess-middleware
+   {:keys [parallelism buffer-size]
+    :or {parallelism 5
+         buffer-size 10}
+    :as options}
+   & args]
+  (let [req-chan (async/chan buffer-size)
+        post-process (apply sync-postprocess-middleware
+                            (fn fwd [resp]
+                              (if-let [e (::error resp)]
+                                (throw e)
+                                resp)) args)]
+    (dotimes [i parallelism]
+      (async/go
+        (while true
+          (let [req (async/<! req-chan)
+                resp-chan (async/chan)
+                error-chan (async/chan)]
+            (async/>! async-handler
+                      (assoc req
+                             :async-response resp-chan
+                             :async-error error-chan))
+            (try
+              (let [value (async/alt!
+                            resp-chan ([resp] resp)
+                            error-chan ([e] {::error e}))
+                    _ (println "result was" value)
+                    result (post-process value)]
+                (if result
+                  (async/>! (:async-response req) result)
+                  (async/>! (:async-error req)
+                            (ex-info "post-process handler returned nil"
+                                     {:req req :middleware sync-postprocess-middleware :value-before-postprocess value}))))
+              (catch Throwable e
+                (async/>! (:async-error req) e)))))))
+    req-chan))
 
 (defn constant-response
   "Returns an async-handler that always returns the given response."

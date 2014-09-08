@@ -61,6 +61,11 @@ is tied to the request map. This way, it's easy to write sophisticated pipelines
 that route and process the request according to whatever rules are necessary for
 the job.
 
+### Ports of many Ring middleware
+
+`async-ring.middleware` contains ports of all the middleware found in Ring core.
+Just post an issue to get your favorite middleware ported!
+
 ## Usage
 
 ### Getting Started
@@ -232,7 +237,7 @@ middleware.
 1. Chaining behavior: in Pedestal, the interceptor framework handles chaining
 behavior, which allows for greater programmatic insight and control. In Async Ring,
 function composition handles chaining behavior, just like in regular Ring.
-1. Compatibility with Ring: in Pedestal, you must either port your Ring middlewares, or deal with the fact that they cannot be paused or migrate threads. In Async Ring, all existing Ring middleware is supported.
+1. Compatibility with Ring: in Pedestal, you must either port your Ring middlewares, or deal with the fact that they cannot be paused or migrate threads. In Async Ring, all existing Ring middleware is supported; however, you will get better performance by porting middlewares.
 
 ## License
 

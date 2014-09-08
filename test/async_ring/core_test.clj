@@ -8,6 +8,7 @@
             [org.httpkit.client :as http]
             [hiccup.core :refer (html)]
             [ring.middleware.params :refer (wrap-params)]
+            [ring.middleware.file-info :refer (wrap-file-info)]
             [ring.util.response :refer (response content-type)]
             [async-ring.beauty :refer :all]
             [async-ring.adapters.http-kit :refer :all]
@@ -18,6 +19,9 @@
 (defroutes ring-app
   (GET "/" []
        (-> (response "all ok")
+           (content-type "text/plain")))
+  (GET "/magicfile" []
+       (-> (response (java.io.File. "project.clj"))
            (content-type "text/plain")))
   (GET "/param" [q]
        (-> (html [:html
@@ -81,11 +85,27 @@
 
 (deftest serve-ring-middleware
   (scaffold-servers (-> (sync->async-adapter #'ring-app {})
-                         (sync->async-middleware wrap-params {}))
-                     (is (= (:body (request :get "http://localhost:12438/")) "all ok"))
-                     (let [body ^String (:body (request :get "http://localhost:12438/param?q=clojure"))]
-                       (is (.contains body "To clojure"))
-                       (is (.startsWith body "<html>")))))
+                        (sync->async-middleware wrap-params {}))
+                    (is (= (:body (request :get "http://localhost:12438/")) "all ok"))
+                    (let [body ^String (:body (request :get "http://localhost:12438/param?q=clojure"))]
+                      (is (.contains body "To clojure"))
+                      (is (.startsWith body "<html>")))))
+
+(deftest serve-ring-preprocess-middleware
+  (scaffold-servers (-> (sync->async-adapter #'ring-app {})
+                        (sync->async-preprocess-middleware wrap-params {}))
+                    (is (= (:body (request :get "http://localhost:12438/")) "all ok"))
+                    (let [body ^String (:body (request :get "http://localhost:12438/param?q=clojure"))]
+                      (is (.contains body "To clojure"))
+                      (is (.startsWith body "<html>")))))
+
+(deftest serve-ring-postprocess-middleware
+  (scaffold-servers (-> (sync->async-adapter #'ring-app {})
+                        (sync->async-postprocess-middleware wrap-file-info {}))
+                    (is (= (:body (request :get "http://localhost:12438/")) "all ok"))
+                    (let [{:as foo :keys [headers body]} (request :get "http://localhost:12438/magicfile")]
+                      (is (= org.httpkit.BytesInputStream (class body)))
+                      (is (contains? headers :content-length)))))
 
 (deftest serve-route-concurrently
   (scaffold-servers (-> (route-concurrently

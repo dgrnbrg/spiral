@@ -12,4 +12,5 @@
   :profiles {:dev {:dependencies [[ring/ring-jetty-adapter "1.3.1"]
                                   [hiccup "1.0.5"]
                                   [compojure "1.1.7"]
+                                  [clj-time "0.4.4"]
                                   [http-kit "2.1.19"]]}})
