@@ -5,32 +5,43 @@
             [org.httpkit.client :as http]
             [hiccup.core :refer (html)]
             [ring.middleware.params :refer (wrap-params)]
-            [ring.util.response :refer (response)]
+            [ring.util.response :refer (response content-type)]
             [async-ring.core :refer :all]))
 
 (defroutes ring-app
   (GET "/" []
-       (response "all ok")) 
+       (-> (response "all ok")
+           (content-type "text/plain")))
   (GET "/param" [q]
-       (html [:html
-              [:body
-               (concat
-                 (when q
-                   [[:p (str "To " q)]])
-                 [[:p
-                   "Hello world, from Ring"]])]])))
+       (-> (html [:html
+                  [:body
+                   (concat
+                     (when q
+                       [[:p (str "To " q)]])
+                     [[:p
+                       "Hello world, from Ring"]])]])
+           (response)
+           (content-type "text/html"))))
 
 (defn request
   [method url]
   (deref (http/request {:url url :method method} identity) 1000 nil))
 
-(defmacro scaffold-http-kit
+(defmacro scaffold-servers
   [app & body]
-  `(let [server# (http-kit/run-server (to-httpkit ~app) {:port 12438})]
-     (try
-       ~@body
-       (finally
-         (server#)))))
+  `(do
+     (testing "http-kit"
+       (let [server# (http-kit/run-server (to-httpkit ~app) {:port 12438})]
+         (try
+           ~@body
+           (finally
+             (server#)))))
+     (testing "jetty"
+       (let [server# (run-jetty-async ~app {:port 12438 :join? false})]
+         (try
+           ~@body
+           (finally
+             (.stop server#)))))))
 
 (comment
   (def srv (http-kit/run-server
@@ -43,19 +54,19 @@
   )
 
 (deftest serve-constant-response
-  (scaffold-http-kit (constant-response {:status 200 :body "success"})
+  (scaffold-servers (constant-response {:status 200 :body "success" :headers {"Content-Type" "text/plain"}})
                      (is (= (:body (request :get "http://localhost:12438/")) "success"))
                      (is (= (:body (request :put "http://localhost:12438/")) "success"))
                      (is (= (:body (request :post "http://localhost:12438/foo")) "success"))))
 
 (deftest serve-ring-app
-  (scaffold-http-kit (sync->async-adapter #'ring-app {})
+  (scaffold-servers (sync->async-adapter #'ring-app {})
                      (is (= (:body (request :get "http://localhost:12438/")) "all ok"))
                      (println "Expect to see an exception next--nothing to worry about")
                      (is (= (:status (request :post "http://localhost:12438/")) 500))))
 
 (deftest serve-ring-middleware
-  (scaffold-http-kit (-> (sync->async-adapter #'ring-app {})
+  (scaffold-servers (-> (sync->async-adapter #'ring-app {})
                          (sync->async-middleware wrap-params {}))
                      (is (= (:body (request :get "http://localhost:12438/")) "all ok"))
                      (let [body ^String (:body (request :get "http://localhost:12438/param?q=clojure"))]
@@ -63,7 +74,7 @@
                        (is (.startsWith body "<html>")))))
 
 (deftest serve-route-concurrently
-  (scaffold-http-kit (-> (route-concurrently
+  (scaffold-servers (-> (route-concurrently
                            "/app" (sync->async-adapter #'ring-app {})
                            "/" (constant-response {:status 404 :body "invalid"}))
                          (sync->async-middleware wrap-params {}))

@@ -8,6 +8,7 @@
                  [http-kit "2.1.19"]
                  [org.clojure/tools.logging "0.2.6"]
                  [ring "1.2.2"]
+                 [ring/ring-jetty-adapter "1.3.1"]
                  [compojure "1.1.7"]
                  [hiccup "1.0.5"]
                  [org.clojure/core.async "0.1.303.0-886421-alpha"]])

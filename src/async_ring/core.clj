@@ -11,6 +11,8 @@
             [clojure.stacktrace]
             [clojure.tools.logging :as log]
             [ring.util.response :refer (response status)]
+            [ring.adapter.jetty]
+            [ring.util.servlet :as servlet]
             [org.httpkit.server :as http-kit]))
 
 ;;; The fundamental unit is a channel. It expects to recieve Ring request maps, which each contain
@@ -40,6 +42,56 @@
                         (http-kit/send! http-kit-chan (-> (response (str "Encountered error! See log."))
                                                           (status 500)))
                         (log/error e))))))))
+
+(defn async-jetty-adapter
+  [async-handler]
+  (proxy [org.eclipse.jetty.server.handler.AbstractHandler] []
+    (handle [_ ^org.eclipse.jetty.server.Request base-request servlet-request servlet-response]
+      (let [request (servlet/build-request-map servlet-request)
+            cont (org.eclipse.jetty.continuation.ContinuationSupport/getContinuation servlet-request)
+            resp-chan (async/chan)
+            error-chan (async/chan)]
+        (async/go
+          (let [response
+                (async/alt!
+                  resp-chan ([resp]
+                             (if resp
+                               resp
+                               (-> (response "nil response body in async-ring.core/to-httpkit")
+                                   (status 500))))
+                  error-chan ([e]
+                              (clojure.stacktrace/print-cause-trace e)
+                              (log/error e)
+                              (-> (response (str "Encountered error! See log."))
+                                  (status 500))))]
+            (servlet/update-servlet-response (.getServletResponse cont) response)
+            (.complete cont)))
+        (async/>!! async-handler (assoc request
+                                        :async-response resp-chan
+                                        :async-error error-chan))
+        (.suspend cont)))))
+
+(defn async-jetty-configurator
+  [configurator handler]
+  (fn [^org.eclipse.jetty.server.Server server]
+    (.setHandler server (async-jetty-adapter handler))
+    (when configurator
+      (configurator server))))
+
+(defn ^org.eclipse.jetty.server.Server run-jetty-async
+  "Start a Jetty webserver to serve the given async handler. For a list
+   of available options, see ring.adapter.jetty/run-jetty. Unlike
+   run-jetty, this supports async ring handlers."
+  [handler options]
+  (ring.adapter.jetty/run-jetty nil (update-in options [:configurator]
+                                               async-jetty-configurator
+                                               handler)))
+
+(comment
+  (def jetty (run-jetty-async (constant-response {:status 200 :body "lol"}) {:port 9009 :join? false}))
+
+  (.stop jetty)
+  )
 
 (defn async->sync-adapter
   "Takes an async ring handler and converts into a normal ring handler.
@@ -96,10 +148,28 @@
 
    Thus you can see how extra arguments (i.e. {:keyswords? true}) are passed to
    wrap-json-body.
+
+   See async->sync-middleware for the dual.
    "
   [async-handler middleware options & args]
   (let [handler (async->sync-adapter async-handler)]
     (sync->async-adapter (apply middleware handler args) options)))
+
+(defn async->sync-middleware
+  "This lets you use async ring middleware in a normal ring app. You
+   simply provide the normal ring handler as well as the constructor
+   function for the async-middlware, along with any args that the
+   async-middleware might take.
+
+   Options configures the concurrency properties of the given
+   normal ring handler; this will affect performance of the async
+   middleware.
+
+   See sync->async-middleware for the dual.
+   "
+  [handler options async-middleware & args]
+  (let [async-handler (sync->async-adapter handler options)]
+    (async->sync-adapter (apply async-middleware async-handler args))))
 
 (defn constant-response
   "Returns an async-handler that always returns the given response."
