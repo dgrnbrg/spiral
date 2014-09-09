@@ -41,6 +41,10 @@ like to use the huge body of existing Ring middleware in your Async Ring app:
 try `sync->async-middleware`. Or maybe you'd like to use async middleware with
 your synchronous Ring app: just use `async->sync-middleware`.
 
+Async Ring also includes a complete set of optimized ports of Ring middleware.
+This port includes a ported test suite, so you can feel comfortable in the logic
+being executed.
+
 ### Beauty
 
 Beauty is a simple concurrent router that lets you reuse your existing Ring routes
