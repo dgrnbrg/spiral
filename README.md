@@ -32,6 +32,27 @@ need to rewrite your app to take advantage of these techniques.
 
 ## Features
 
+### Beauty
+
+Note: Beauty is currently the primary reason to use this library.
+
+Have you ever wanted to prioritize routes that serve static data over routes
+that serve DB queries? What about reserving dedicated capacity for your
+administrator accounts, to ensure responsiveness under heavy load? Maybe
+you want to give dedicated capacity to your paid tier over free.
+
+Beauty is a simple concurrent router that lets you reuse your existing Ring routes
+and handlers, be they Clout or Compojure, Hiccup or Selmer. You just pass
+your existing app to the `beauty-router` middleware, and then annotate any handlers
+that you want to run concurrently with prioritization. There is an example
+of how to do this further down in the README.
+
+### core.async based
+
+With Async Ring, you can leverage the power of core.async in your Ring handlers.
+Now, you can park on your database and REST requests using `<!` and `!>'! Soon,
+there will be syntax sugar for making this trivial.
+
 ### Forwards and Backwards compatible with Ring
 
 Async Ring is 100% compatible with normal Ring. Want to use your Ring handler
@@ -44,13 +65,6 @@ your synchronous Ring app: just use `async->sync-middleware`.
 Async Ring also includes a complete set of optimized ports of Ring middleware.
 These ports includes a ported test suite, so you can feel comfortable in the logic
 being executed.
-
-### Beauty
-
-Beauty is a simple concurrent router that lets you reuse your existing Ring routes
-and handlers, be they Clout or Compojure, Hiccup or Selmer. You just need to pass
-your existing app to the `beauty-router` middleware, and then annotate any handlers
-that you want to run concurrently with prioritization.
 
 ### Integration with standard servers
 
