@@ -72,7 +72,7 @@ Async Ring comes with adapters for Jetty 7 and http-kit, so that you don't even
 need to change your server code. Just use `to-jetty` or `to-httpkit` to mount
 an async handler onto your existing routing hierarchy.
 
-### Core.async based API
+### core.async based API
 
 Async Ring uses a standard pattern in core.async, in which the response channel
 is tied to the request map. This way, it's easy to write sophisticated pipelines
@@ -88,7 +88,7 @@ Just post an issue to get your favorite middleware ported!
 
 ### Getting Started
 
-Let's first take a look at how to write "Hello World" in Async Ring with Http-Kit:
+Let's first take a look at how to write "Hello World" in Async Ring with http-kit:
 
 ```clojure
 (require '[org.http-kit.server :as http-kit])
@@ -106,8 +106,8 @@ Let's first take a look at how to write "Hello World" in Async Ring with Http-Ki
 In this example, we see how to use the `constant-response` handler, which is
 the simplest Async Ring handler available. It always returns the same response.
 
-After we create the app, we use `to-httpkit` to make it Http-Kit compatible,
-and then we pass it to the Http-Kit server to start the application.
+After we create the app, we use `to-httpkit` to make it http-kit compatible,
+and then we pass it to the http-kit server to start the application.
 
 ### Running traditional Ring apps on Async Ring
 
