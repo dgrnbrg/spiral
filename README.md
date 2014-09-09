@@ -2,7 +2,9 @@
 
 # spiral
 
-Like Ring, but async.
+A Ring that never blocks.
+
+Spiral integrates Ring and core.async.
 
 To use in your Leiningen project, add the following
 
@@ -50,20 +52,20 @@ of how to do this further down in the README.
 ### core.async based
 
 With Spiral, you can leverage the power of core.async in your Ring handlers.
-Now, you can park on your database and REST requests using `<!` and `!>'! Soon,
+Now, you can park on your database and REST requests using `<!` and `!>`! Soon,
 there will be syntax sugar for making this trivial.
 
 ### Forwards and Backwards compatible with Ring
 
 Spiral is 100% compatible with normal Ring. Want to use your Ring handler
-in an Spiral app? Just use `sync->async-hander`. What about mounting an
+in an Spiral app? Just use `sync->async-handler`. What about mounting an
 Spiral handler into a normal Ring add? `async->sync-handler`. Maybe you'd
 like to use the huge body of existing Ring middleware in your Spiral app:
 try `sync->async-middleware`. Or maybe you'd like to use async middleware with
 your synchronous Ring app: just use `async->sync-middleware`.
 
 Spiral also includes a complete set of optimized ports of Ring middleware.
-These ports includes a ported test suite, so you can feel comfortable in the logic
+These ports include a ported test suite, so you can feel comfortable in the logic
 being executed.
 
 ### Integration with standard servers
@@ -71,13 +73,6 @@ being executed.
 Spiral comes with adapters for Jetty 7 and http-kit, so that you don't even
 need to change your server code. Just use `to-jetty` or `to-httpkit` to mount
 an async handler onto your existing routing hierarchy.
-
-### core.async based API
-
-Spiral uses a standard pattern in core.async, in which the response channel
-is tied to the request map. This way, it's easy to write sophisticated pipelines
-that route and process the request according to whatever rules are necessary for
-the job.
 
 ### Ports of many Ring middleware
 
