@@ -41,18 +41,18 @@
             :as options}]
   (let [req-chan (async/chan buffer-size)]
     (dotimes [i parallelism]
-      (async/go
+      (async/thread
         (while true
-          (let [req (async/<! req-chan)]
+          (let [req (async/<!! req-chan)]
             (try
               (let [resp (handler req)]
                 (if resp
-                  (async/>! (:async-response req) resp)
-                  (async/>! (:async-error req)
+                  (async/>!! (:async-response req) resp)
+                  (async/>!! (:async-error req)
                             (ex-info "Handler returned null"
                                      {:req req :handler handler}))))
               (catch Throwable e
-                (async/>! (:async-error req) e)))))))
+                (async/>!! (:async-error req) e)))))))
     req-chan))
 
 (defn sync->async-middleware

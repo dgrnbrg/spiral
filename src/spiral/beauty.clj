@@ -40,14 +40,16 @@
       (log/debug  "Creating beauty router pool" pool
                  "with parallelism" parallelism
                  "and buffer size" buffer-size)
+      ;;Execution workers mustn't block the goroutine scheduler
       (dotimes [i parallelism]
-        (async/go
+        (async/thread
           (while true
-            (let [{:keys [thunk request] :as task} (async/<! work-chan)]
+            (let [{:keys [thunk request] :as task} (async/<!! work-chan)]
               (try
-                (async/>! (:async-response request) (thunk))
+                (async/>!! (:async-response request) (thunk))
                 (catch Throwable t
-                  (async/>! (:async-error request) t)))))))
+                  (async/>!! (:async-error request) t)))))))
+      ;;This manages the priority queue
       (async/go
         (loop [buf (priority-map)]
           (let [cur-buf-size (count buf)
@@ -61,6 +63,8 @@
             (if (= port work-chan)
               (recur (dissoc buf next-work-item)) 
               (recur (assoc buf val (:priority val))))))))
+    ;;TODO: can add extra copies of the following router worker
+    ;;to improve routing performance
     (async/go
       (while true
         (let [req (async/<! req-chan)
