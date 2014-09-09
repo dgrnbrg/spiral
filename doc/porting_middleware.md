@@ -1,7 +1,7 @@
 This guide explains more about how to port Ring middleware to be Async
 
 
-# Using unported Ring middleware with Async Ring
+# Using unported Ring middleware with Spiral
 
 ## Simple Case
 
@@ -13,11 +13,11 @@ the inner handler.
 If the middleware only modifies the request before passing
 it to the inner handler, and returns the inner handler's result
 unmodified, then you've got the easiest case! You can use
-`async-ring.core/sync->async-preprocess-middleware` to do this.
+`spiral.core/sync->async-preprocess-middleware` to do this.
 For example, if you wanted to port `wrap-file`, you could write:
 
 ```clojure
-(-> async-ring-app
+(-> spiral-app
     (sync->async-preprocess-middleware wrap-file {:buffer 5}))
 ```
 
@@ -30,7 +30,7 @@ as an argument, this function won't work. Let's look at `wrap-file-info`
 for example:
 
 ```clojure
-(-> async-ring-app
+(-> spiral-app
   (sync->async-postprocess-middleware wrap-file-info {:buffer 5}))
 ```
 
@@ -52,27 +52,27 @@ concurrent connections (and using 100 threads):
 (require '[compojure.core :refer (defroutes GET)])
 (require '[ring.middleware.params :refer (wrap-params)])
 (require '[org.http-kit.server :as http-kit])
-(require 'async-ring.adapters.http-kit)
-(require 'async-ring.core)
+(require 'spiral.adapters.http-kit)
+(require 'spiral.core)
 
 (defroutes traditional-ring-app
   (GET "/" [q]
     {:body (str "got " q) :status 200 :headers {"Content-Type" "text/plain"}}))
 
-(def async-ring-app
-  (-> (async-ring.core/sync->async-adapter traditional-ring-app
+(def spiral-app
+  (-> (spiral.core/sync->async-adapter traditional-ring-app
                                            {}))
-      (async-ring.core/sync->async-middleware wrap-session
+      (spiral.core/sync->async-middleware wrap-session
                                               {:parallelism 100}))
 
-(def server (http-kit/run-server (async-ring.adapters.to-httpkit async-ring-app)
+(def server (http-kit/run-server (spiral.adapters.to-httpkit spiral-app)
                                  {:port 8080}))
 ```
 
 ### Port
 
 Now is where I say that actually you want to make this middlewares
-feel first-class when you invoke them. For this, in `async-ring.middleware`,
+feel first-class when you invoke them. For this, in `spiral.middleware`,
 I have a macro, `provide-process-middleware`, that can do all of these
 types of ports in only a few charactors and maintain docstrings. If you
 want to get a full performance native port, then look at the port of

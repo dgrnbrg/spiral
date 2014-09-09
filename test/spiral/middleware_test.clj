@@ -1,12 +1,12 @@
-(ns async-ring.middleware-test
+(ns spiral.middleware-test
   (:use clojure.test
-        async-ring.core
+        spiral.core
         [ring.middleware.session :only [session-request session-response]]
         ring.middleware.session.store  
         [clojure.string :only (split)]
         [ring.util.io :only (string-input-stream)] 
         [clj-time.core :only (interval date-time)]  
-        async-ring.middleware)
+        spiral.middleware)
   (:require ring.middleware.session.memory)
   (:import java.io.File))
 

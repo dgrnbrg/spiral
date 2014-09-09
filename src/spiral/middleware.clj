@@ -1,5 +1,5 @@
-(ns async-ring.middleware
-  (:require [async-ring.core :refer (sync->async-preprocess-middleware sync->async-postprocess-middleware)]
+(ns spiral.middleware
+  (:require [spiral.core :refer (sync->async-preprocess-middleware sync->async-postprocess-middleware)]
             [clojure.core.async :as async] 
             [ring.middleware.file-info :as file-info]
             [ring.middleware.params :as params]
@@ -60,7 +60,7 @@
         details (-> (meta v)
                     (update-in [:arglists] #(map change-arg-to-async-handler %))
                     (assoc :ns *ns*)
-                    (update-in [:doc] #(str "This is the async ring version of " (:ns (meta v)) \/ (:name (meta v)) \newline \newline %)))
+                    (update-in [:doc] #(str "This is the spiral version of " (:ns (meta v)) \/ (:name (meta v)) \newline \newline %)))
         standard-case `(apply ~(case pre-or-post
                                  :post `sync->async-postprocess-middleware
                                  :pre `sync->async-preprocess-middleware

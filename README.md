@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/dgrnbrg/async-ring.svg?branch=master)](https://travis-ci.org/dgrnbrg/async-ring)
+[![Build Status](https://travis-ci.org/dgrnbrg/spiral.svg?branch=master)](https://travis-ci.org/dgrnbrg/spiral)
 
-# async-ring
+# spiral
 
 Like Ring, but async.
 
@@ -8,11 +8,11 @@ To use in your Leiningen project, add the following
 
 ```clojure
 ;; For http-kit support
-[async-ring "0.1.0"]
+[spiral "0.1.0"]
 [http-kit "2.1.19"]
 
 ;; For jetty support
-[async-ring "0.1.0"]
+[spiral "0.1.0"]
 [ring/ring-jetty-adapter "1.3.1"]
 ```
 
@@ -26,7 +26,7 @@ servers must solve:
 - How can the server dedicate more or fewer resources to different requests?
 - How can long-running HTTP requests be easily developed, without blocking threads?
 
-Async Ring attempts to solve these problems by introducing a core.async based API
+Spiral attempts to solve these problems by introducing a core.async based API
 that is backwards compatible with Ring and popular Ring servers, so that you don't
 need to rewrite your app to take advantage of these techniques.
 
@@ -49,133 +49,133 @@ of how to do this further down in the README.
 
 ### core.async based
 
-With Async Ring, you can leverage the power of core.async in your Ring handlers.
+With Spiral, you can leverage the power of core.async in your Ring handlers.
 Now, you can park on your database and REST requests using `<!` and `!>'! Soon,
 there will be syntax sugar for making this trivial.
 
 ### Forwards and Backwards compatible with Ring
 
-Async Ring is 100% compatible with normal Ring. Want to use your Ring handler
-in an Async Ring app? Just use `sync->async-hander`. What about mounting an
-Async Ring handler into a normal Ring add? `async->sync-handler`. Maybe you'd
-like to use the huge body of existing Ring middleware in your Async Ring app:
+Spiral is 100% compatible with normal Ring. Want to use your Ring handler
+in an Spiral app? Just use `sync->async-hander`. What about mounting an
+Spiral handler into a normal Ring add? `async->sync-handler`. Maybe you'd
+like to use the huge body of existing Ring middleware in your Spiral app:
 try `sync->async-middleware`. Or maybe you'd like to use async middleware with
 your synchronous Ring app: just use `async->sync-middleware`.
 
-Async Ring also includes a complete set of optimized ports of Ring middleware.
+Spiral also includes a complete set of optimized ports of Ring middleware.
 These ports includes a ported test suite, so you can feel comfortable in the logic
 being executed.
 
 ### Integration with standard servers
 
-Async Ring comes with adapters for Jetty 7 and http-kit, so that you don't even
+Spiral comes with adapters for Jetty 7 and http-kit, so that you don't even
 need to change your server code. Just use `to-jetty` or `to-httpkit` to mount
 an async handler onto your existing routing hierarchy.
 
 ### core.async based API
 
-Async Ring uses a standard pattern in core.async, in which the response channel
+Spiral uses a standard pattern in core.async, in which the response channel
 is tied to the request map. This way, it's easy to write sophisticated pipelines
 that route and process the request according to whatever rules are necessary for
 the job.
 
 ### Ports of many Ring middleware
 
-`async-ring.middleware` contains ports of all the middleware found in Ring core.
+`spiral.middleware` contains ports of all the middleware found in Ring core.
 Just post an issue to get your favorite middleware ported!
 
 ## Usage
 
 ### Getting Started
 
-Let's first take a look at how to write "Hello World" in Async Ring with http-kit:
+Let's first take a look at how to write "Hello World" in Spiral with http-kit:
 
 ```clojure
 (require '[org.http-kit.server :as http-kit])
-(require 'async-ring.adapters.http-kit)
-(require 'async-ring.core)
+(require 'spiral.adapters.http-kit)
+(require 'spiral.core)
 
-(def async-ring-app
-  (async-ring.core/constant-response
+(def spiral-app
+  (spiral.core/constant-response
     {:body "all ok" :status 200 :headers {"Content-Type" "text/plain"}}))
 
-(def server (http-kit/run-server (async-ring.adapters.http-kit/to-httpkit async-ring-app)
+(def server (http-kit/run-server (spiral.adapters.http-kit/to-httpkit spiral-app)
                                  {:port 8080}))
 ```
 
 In this example, we see how to use the `constant-response` handler, which is
-the simplest Async Ring handler available. It always returns the same response.
+the simplest Spiral handler available. It always returns the same response.
 
 After we create the app, we use `to-httpkit` to make it http-kit compatible,
 and then we pass it to the http-kit server to start the application.
 
-### Running traditional Ring apps on Async Ring
+### Running traditional Ring apps on Spiral
 
 Now, we'll look at how we can run an existing traditional Ring app on
-Async Ring with Jetty.
+Spiral with Jetty.
 
 ```clojure
 (require '[compojure.core :refer (defroutes GET)])
-(require '[async-ring.adapters.jetty :as jetty])
-(require 'async-ring.core)
+(require '[spiral.adapters.jetty :as jetty])
+(require 'spiral.core)
 
 (defroutes traditional-ring-app
   (GET "/" []
     {:body "all ok" :status 200 :headers {"Content-Type" "text/plain"}}))
 
-(def async-ring-app
-  (async-ring.core/sync->async-adapter traditional-ring-app
+(def spiral-app
+  (spiral.core/sync->async-adapter traditional-ring-app
                                        {:parallelism 10
                                         :buffer-size 5}))
 
-(def server (jetty/run-jetty-async (jetty/to-jetty async-ring-app)
+(def server (jetty/run-jetty-async (jetty/to-jetty spiral-app)
                                    {:port 8080
                                     :join? false}))
 ```
 
 Here, we first create a traditional Ring app. Then, we add an adapter to make it
 asynchronous, allowing up to 10 requests to be simultaneously routed and processed,
-and up to 5 requests to be buffered. Finally, we start the Async Ring app on Jetty.
+and up to 5 requests to be buffered. Finally, we start the Spiral app on Jetty.
 
 ### Using Ring middleware
 
-Async Ring has a small but growing library of native ports of Ring middleware. By using
+Spiral has a small but growing library of native ports of Ring middleware. By using
 a native port of the Ring middleware, you're able to get the best performance.
 
 ```clojure
 (require '[compojure.core :refer (defroutes GET)])
-(require '[async-ring.middleware :refer (wrap-params)])
+(require '[spiral.middleware :refer (wrap-params)])
 (require '[org.http-kit.server :as http-kit])
-(require 'async-ring.adapters.http-kit)
-(require 'async-ring.core)
+(require 'spiral.adapters.http-kit)
+(require 'spiral.core)
 
 (defroutes traditional-ring-app
   (GET "/" [q]
     {:body (str "got " q) :status 200 :headers {"Content-Type" "text/plain"}}))
 
-(def async-ring-app
-  (-> (async-ring.core/sync->async-adapter traditional-ring-app
+(def spiral-app
+  (-> (spiral.core/sync->async-adapter traditional-ring-app
                                            {:parallelism 5
                                             :buffer-size 5}))
       (wrap-params {:parallelism 10
                     :buffer-size 100}))
 
-(def server (http-kit/run-server (async-ring.adapters.to-httpkit async-ring-app)
+(def server (http-kit/run-server (spiral.adapters.to-httpkit spiral-app)
                                  {:port 8080}))
 ```
 
-Here, we can see a few things. First of all, it's easy to compose Async Ring
+Here, we can see a few things. First of all, it's easy to compose Spiral
 handlers using `->`, just like regular Ring. Secondly, we can see that it's
 possible to control the buffering and parallelism at each stage in the async
 pipeline--this allows you to make decisions such as devoting extra CPU cores
 to encoding/decoding middleware, and limiting the concurrent number of requests
 to a database-backed session store.
 
-Ported middleware lives in `async-ring.middleware`. The
+Ported middleware lives in `spiral.middleware`. The
 second argument to the async-ported middleware is always the async options, such
 as parallelism and the buffer size.
 
-If you'd like to see your middlewares ported to Async Ring, just file an issue
+If you'd like to see your middlewares ported to Spiral, just file an issue
 and I'll do that quickly.
 
 ### Using Beauty
@@ -191,8 +191,8 @@ Let's first look at a simple example of using Beauty:
 ```clojure
 (require '[compojure.core :refer (defroutes GET ANY)])
 (require '[org.http-kit.server :as http-kit])
-(require 'async-ring.adapters.http-kit)
-(require 'async-ring.core)
+(require 'spiral.adapters.http-kit)
+(require 'spiral.core)
 
 (defroutes beautified-traditional-ring-app
   (GET "/" []
@@ -204,7 +204,7 @@ Let's first look at a simple example of using Beauty:
   (ANY "/rest/endpoint/:id" [id]
     (beauty-route :endpoint 8 (handle-endpoint-id id))))
 
-(def server (http-kit/run-server (async-ring.adapters.to-httpkit
+(def server (http-kit/run-server (spiral.adapters.to-httpkit
                                    (beauty-router
                                      beautified-traditional-ring-app
                                      {:main {:parallelism 1}
@@ -238,41 +238,41 @@ The Beauty Router should be flexible enough to solve most QoS problems; neverthe
 
 ## Comparison with Pedestal
 
-At first glance, Async Ring and Pedestal seem very similar--they're both frameworks
+At first glance, Spiral and Pedestal seem very similar--they're both frameworks
 for building asynchronous HTTP applications using a slightly modified Ring API. In
-this section, we'll look at some of the differences between Pedestal and Async Ring.
+this section, we'll look at some of the differences between Pedestal and Spiral.
 
 1. Concurrency mechanism: in Pedestal, you write pure functions for each request lifecycle state transition, and the Pedestal server schedules these function for you. In
-Async Ring, you write core.async code, so the control flow of your handler is exactly
+Spiral, you write core.async code, so the control flow of your handler is exactly
 how you write it. In other words, you can using `<!` and `>!` to block wherever you
 want.
-1. Performance: Pedestal and Async Ring both allow for many more connections than
+1. Performance: Pedestal and Spiral both allow for many more connections than
 threads, thus enabling many more concurrenct connections that Ring.
 1. Composition: in Pedestal, interceptors are placed in a queue for executor. This
 allows for interceptions to know the entire queue of execution as it stands, at
-the expense of always encoding the request processing as a queue. In Async Ring,
-handlers are only identified by their input channel. Thus, Async Ring handlers cannot
+the expense of always encoding the request processing as a queue. In Spiral,
+handlers are only identified by their input channel. Thus, Spiral handlers cannot
 automatically know what other executors are in the execution pipeline. On the other
-hand, Async Ring handlers can express more complex worker-pool and dynamically routed
+hand, Spiral handlers can express more complex worker-pool and dynamically routed
 topologies in a single expression, rather than requiring dynamic interceptor
 middleware.
 1. Chaining behavior: in Pedestal, the interceptor framework handles chaining
-behavior, which allows for greater programmatic insight and control. In Async Ring,
+behavior, which allows for greater programmatic insight and control. In Spiral,
 function composition handles chaining behavior, just like in regular Ring.
-1. Compatibility with Ring: in Pedestal, you must either port your Ring middlewares, or deal with the fact that they cannot be paused or migrate threads. In Async Ring, all existing Ring middleware is supported; however, you will get better performance by porting middlewares.
+1. Compatibility with Ring: in Pedestal, you must either port your Ring middlewares, or deal with the fact that they cannot be paused or migrate threads. In Spiral, all existing Ring middleware is supported; however, you will get better performance by porting middlewares.
 
 ## Performance
 
 Performance numbers are currently only preliminary.
 
-I benchmarked returning the "constant" body via Async Ring, Traditional Ring, and using a callback. All tests were done on http-kit.
+I benchmarked returning the "constant" body via Spiral, Traditional Ring, and using a callback. All tests were done on http-kit.
 
-|            | Traditional Ring | httpkit async | Async Ring |
+|            | Traditional Ring | httpkit async | Spiral |
 |------------|------------------|---------------|------------|
 | Mean       | 1.45 ms          | 1.542 ms      | 1.953 ms   |
 | 90th %ile  | 2 ms             | 2 ms          | 2 ms       |
 
-Thus Async Ring adds 500 microseconds to each call, but doesn't impact
+Thus Spiral adds 500 microseconds to each call, but doesn't impact
 outliers significantly. This is something
 I'd like to try to to improve; however, the latency cost is worth it
 if you need these other concurrency features.

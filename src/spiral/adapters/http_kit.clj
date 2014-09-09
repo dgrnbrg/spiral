@@ -1,5 +1,5 @@
-(ns async-ring.adapters.http-kit
-  "This namespace provides an async ring compatible http-kit adapter. In order to use it, simple pass your async ring handler to the function to-httpkit, and have the return value of that function be the http-kit handler.
+(ns spiral.adapters.http-kit
+  "This namespace provides a spiral compatible http-kit adapter. In order to use it, simple pass your spiral handler to the function to-httpkit, and have the return value of that function be the http-kit handler.
    
    For example, to run my-async-handler on http-kit, just do:
    
@@ -25,7 +25,7 @@
             resp-chan ([resp]
                        (if resp
                          (http-kit/send! http-kit-chan resp)
-                         (http-kit/send! http-kit-chan (-> (response "nil response body in async-ring.core/to-httpkit")
+                         (http-kit/send! http-kit-chan (-> (response "nil response body in spiral.core/to-httpkit")
                                                            (status 500)))))
             error-chan ([e]
                         (clojure.stacktrace/print-cause-trace e)

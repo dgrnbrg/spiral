@@ -1,6 +1,6 @@
-(ns async-ring.core
+(ns spiral.core
   "This namespace provides a core.async API for Ring. It allows you define and nest synchronous
-   and async ring handlers to create efficient, async http servers.
+   and spiral handlers to create efficient, async http servers.
 
    Async handlers are just core.async channels! To use them, put ring request maps into them.
    Each request map must contain 2 additional keys, :async-response and :async-error, which must
@@ -15,9 +15,9 @@
 ;;;
 
 (defn async->sync-adapter
-  "Takes an async ring handler and converts into a normal ring handler.
+  "Takes a spiral handler and converts into a normal ring handler.
 
-   This uses blocking async operations, so the async ring handler shouldn't block."
+   This uses blocking async operations, so the spiral handler shouldn't block."
   [async-middleware]
   (fn async->sync-handler-adapter-helper [req]
     (let [resp-chan (async/chan)
@@ -31,7 +31,7 @@
         error-chan ([e] (throw e))))))
 
 (defn sync->async-adapter
-  "This takes a normal ring handler and converts it into an async ring
+  "This takes a normal ring handler and converts it into a spiral
    handler. It runs the ring handler on up to :parallelism goroutines,
    and it will queue up to :buffer-size requests before exhibiting
    back-pressure."
@@ -56,7 +56,7 @@
     req-chan))
 
 (defn sync->async-middleware
-  "This lets you use normal ring middleware in an async ring app. You must
+  "This lets you use normal ring middleware in a spiral app. You must
    provide the async-handler that will be wrapped with the middleware,
    an options map (nil means use defaults) to configure the concurrent
    properties of the synchronous middleware, and you can optionally provide
@@ -77,7 +77,7 @@
     (sync->async-adapter (apply middleware handler args) options)))
 
 (defn async->sync-middleware
-  "This lets you use async ring middleware in a normal ring app. You
+  "This lets you use spiral middleware in a normal ring app. You
    simply provide the normal ring handler as well as the constructor
    function for the async-middlware, along with any args that the
    async-middleware might take.

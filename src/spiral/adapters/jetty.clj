@@ -1,5 +1,5 @@
-(ns async-ring.adapters.jetty
-  "This namespace provides an async ring compatible Jetty adapter. This Jetty adapter supports normal ring and async ring handlers. If you want to pass an async ring handler to the adapter, then you must use the function to-jetty to convert the ring middleware to the async-jetty-adapter.
+(ns spiral.adapters.jetty
+  "This namespace provides a spiral compatible Jetty adapter. This Jetty adapter supports normal ring and spiral handlers. If you want to pass a spiral handler to the adapter, then you must use the function to-jetty to convert the ring middleware to the async-jetty-adapter.
    
    For example, to run my-async-handler on jetty, just do:
    
@@ -35,7 +35,7 @@
                       resp-chan ([resp]
                                  (if resp
                                    resp
-                                   (-> (response "nil response body in async-ring.core/to-httpkit")
+                                   (-> (response "nil response body in spiral.core/to-httpkit")
                                        (status 500))))
                       error-chan ([e]
                                   (clojure.stacktrace/print-cause-trace e)
@@ -62,7 +62,7 @@
 (defn ^org.eclipse.jetty.server.Server run-jetty-async
   "Start a Jetty webserver to serve the given async handler. For a list
    of available options, see ring.adapter.jetty/run-jetty. Unlike
-   run-jetty, this supports async ring handlers."
+   run-jetty, this supports spiral handlers."
   [handler options]
   (ring.adapter.jetty/run-jetty nil (update-in options [:configurator]
                                                async-jetty-configurator

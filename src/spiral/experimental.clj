@@ -1,5 +1,5 @@
-(ns async-ring.experimental
-  "This namespace contains experimental async ring functionality.
+(ns spiral.experimental
+  "This namespace contains experimental spiral functionality.
    
    work-shed is an async middle that automatically returns short, precomputed responses to clients when the server gets overloaded.
    

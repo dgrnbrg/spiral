@@ -1,4 +1,4 @@
-(ns async-ring.beauty
+(ns spiral.beauty
   "This namespace contains the Beauty concurrent quality of service routing middleware. See README.md for details on how to use Beauty in your application."
   (:require [clojure.data.priority-map :refer (priority-map)]
             [clojure.core.async :as async]

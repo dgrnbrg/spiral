@@ -1,6 +1,6 @@
-(defproject async-ring "0.1.1-SNAPSHOT"
+(defproject spiral "0.1.1-SNAPSHOT"
   :description "core.async based http server library"
-  :url "http://github.com/dgrnbrg/async-ring"
+  :url "http://github.com/dgrnbrg/spiral"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :jvm-opts ^:replace ["-Xmx4g" "-server"]

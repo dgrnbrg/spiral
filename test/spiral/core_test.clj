@@ -1,4 +1,4 @@
-(ns async-ring.core-test
+(ns spiral.core-test
   "Isn't testing fun? This is just one big inbred testing file, because it's
    much easier to start each server and run the full test battery against them.
    Eventually, this could be split into several test files."
@@ -10,11 +10,11 @@
             [ring.middleware.params :refer (wrap-params)]
             [ring.middleware.file-info :refer (wrap-file-info)]
             [ring.util.response :refer (response content-type)]
-            [async-ring.beauty :refer :all]
-            [async-ring.adapters.http-kit :refer :all]
-            [async-ring.adapters.jetty :refer :all]
-            [async-ring.experimental :refer :all]
-            [async-ring.core :refer :all]))
+            [spiral.beauty :refer :all]
+            [spiral.adapters.http-kit :refer :all]
+            [spiral.adapters.jetty :refer :all]
+            [spiral.experimental :refer :all]
+            [spiral.core :refer :all]))
 
 (defroutes ring-app
   (GET "/" []
