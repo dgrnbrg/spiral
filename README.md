@@ -81,6 +81,8 @@ Just post an issue to get your favorite middleware ported!
 
 ## Usage
 
+See `SPEC.md` for a specific treatment of how the format works.
+
 ### Getting Started
 
 Let's first take a look at how to write "Hello World" in Spiral with http-kit:
@@ -230,6 +232,19 @@ These priorities are used to determine which request will be handled from the
 pool's buffer.
 
 The Beauty Router should be flexible enough to solve most QoS problems; nevertheless, Pull Requests are welcome to improve the functionality!
+
+## Implementation
+
+What follows is a brief note on the fundamental implementation of Spiral.
+
+In Spiral, an async handler is simply a channel, the fundamental composable
+unit of core async. Ring request maps are simply passed into that channel. Clearly,
+it's easy to flow the data through the handlers, but how can we flow it back
+out to the client? Each request contains 2 extra keys, `:async-response` and
+`:async-error`: if you'd like to send a response, put it onto the channel
+`:async-response`. If you'd like to send an error, put it onto the channel
+`:async-error`. Middleware can intercept responses by inserting their own
+channels into those keys.
 
 ## Comparison with Pedestal
 
