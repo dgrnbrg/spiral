@@ -23,7 +23,7 @@ fails to solve many problems that high-performance and transactional HTTP
 servers must solve:
 
 - What does the server do when it can't handle the request rate?
-- How can the server dedicate more or less resources to different requests?
+- How can the server dedicate more or fewer resources to different requests?
 - How can long-running HTTP requests be easily developed, without blocking threads?
 
 Async Ring attempts to solve these problems by introducing a core.async based API
@@ -42,7 +42,7 @@ try `sync->async-middleware`. Or maybe you'd like to use async middleware with
 your synchronous Ring app: just use `async->sync-middleware`.
 
 Async Ring also includes a complete set of optimized ports of Ring middleware.
-This port includes a ported test suite, so you can feel comfortable in the logic
+These ports includes a ported test suite, so you can feel comfortable in the logic
 being executed.
 
 ### Beauty
@@ -125,7 +125,7 @@ and up to 5 requests to be buffered. Finally, we start the Async Ring app on Jet
 
 ### Using Ring middleware
 
-Async Ring has a small library of native ports of Ring middleware. By using
+Async Ring has a small but growing library of native ports of Ring middleware. By using
 a native port of the Ring middleware, you're able to get the best performance.
 
 ```clojure
