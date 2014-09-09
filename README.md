@@ -2,7 +2,7 @@
 
 # spiral
 
-A Ring that never blocks.
+A Ring that doesn't block.
 
 Spiral integrates Ring and core.async.
 
