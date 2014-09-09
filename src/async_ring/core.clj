@@ -148,7 +148,6 @@
               (let [value (async/alt!
                             resp-chan ([resp] resp)
                             error-chan ([e] {::error e}))
-                    _ (println "result was" value)
                     result (post-process value)]
                 (if result
                   (async/>! (:async-response req) result)
