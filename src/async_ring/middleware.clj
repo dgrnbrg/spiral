@@ -20,33 +20,6 @@
     (vec (concat ['async-handler 'async-options] (next arglist)))
     (throw (ex-info "Don't recognize arglist" {:arglist arglist}))))
 
-(defmacro provide-process-middleware
-  [f pre-or-post & [initpro prepro postpro :as impls]]
-  (let [v (resolve f)
-        details (-> (meta v)
-                    (update-in [:arglists] #(map change-arg-to-async-handler %))
-                    (assoc :ns *ns*)
-                    (update-in [:doc] #(str "This is the async ring version of " (:ns (meta v)) \/ (:name (meta v)) \newline \newline %)))
-        standard-case `(apply ~(case pre-or-post
-                                 :post `sync->async-postprocess-middleware 
-                                 :pre `sync->async-preprocess-middleware
-                                 :both nil
-                                 (throw (ex-info "Must use :pre or :post for pre-or-post arg"
-                                                 {:pre-or-post pre-or-post})))
-                              ~'async-handler
-                              ~f
-                              ~'opts
-                              ~'args)
-        special-case `(apply both-side-process-middleware
-                             ~'async-handler
-                             ~initpro ~prepro ~postpro
-                             ~'opts ~'args)]
-    `(defn ~(:name (meta v))
-       ~(:doc details)
-       {:arglists '~(:arglists details)}
-       [~'async-handler ~'opts & ~'args]
-       ~(if (and (= :both pre-or-post) impls) special-case standard-case))))
-
 (defn both-side-process-middleware
   [async-handler init-side preprocess-side postprocess-side
    {:keys [parallelism buffer-size]
@@ -80,6 +53,34 @@
               (catch Throwable e
                 (async/>! (:async-error req) e)))))))
     req-chan))
+
+(defmacro provide-process-middleware
+  [f pre-or-post & [initpro prepro postpro :as impls]]
+  (let [v (resolve f)
+        details (-> (meta v)
+                    (update-in [:arglists] #(map change-arg-to-async-handler %))
+                    (assoc :ns *ns*)
+                    (update-in [:doc] #(str "This is the async ring version of " (:ns (meta v)) \/ (:name (meta v)) \newline \newline %)))
+        standard-case `(apply ~(case pre-or-post
+                                 :post `sync->async-postprocess-middleware
+                                 :pre `sync->async-preprocess-middleware
+                                 :both nil
+                                 (throw (ex-info "Must use :pre or :post for pre-or-post arg"
+                                                 {:pre-or-post pre-or-post})))
+                              ~'async-handler
+                              ~f
+                              ~'opts
+                              ~'args)
+        special-case `(apply both-side-process-middleware
+                             ~'async-handler
+                             ~initpro ~prepro ~postpro
+                             ~'opts ~'args)]
+    `(defn ~(:name (meta v))
+       ~(:doc details)
+       {:arglists '~(:arglists details)}
+       [~'async-handler ~'opts & ~'args]
+       ~(if (and (= :both pre-or-post) impls) special-case standard-case))))
+
 
 (provide-process-middleware params/wrap-params :pre)
 (provide-process-middleware file-info/wrap-file-info :post)

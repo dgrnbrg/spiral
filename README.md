@@ -123,16 +123,14 @@ Here, we first create a traditional Ring app. Then, we add an adapter to make it
 asynchronous, allowing up to 10 requests to be simultaneously routed and processed,
 and up to 5 requests to be buffered. Finally, we start the Async Ring app on Jetty.
 
-### Using traditional Ring middleware with Async Ring
+### Using Ring middleware
 
-Let's look at how we can run existing Ring middleware on an Async Ring stack.
-We'll do this by creating a traditional Ring app that needs the `wrap-params`
-middleware, making that Ring app async, and then adding `wrap-params` as an
-async middleware.
+Async Ring has a small library of native ports of Ring middleware. By using
+a native port of the Ring middleware, you're able to get the best performance.
 
 ```clojure
 (require '[compojure.core :refer (defroutes GET)])
-(require '[ring.middleware.params :refer (wrap-params)])
+(require '[async-ring.middleware :refer (wrap-params)])
 (require '[org.http-kit.server :as http-kit])
 (require 'async-ring.adapters.http-kit)
 (require 'async-ring.core)
@@ -145,9 +143,8 @@ async middleware.
   (-> (async-ring.core/sync->async-adapter traditional-ring-app
                                            {:parallelism 5
                                             :buffer-size 5}))
-      (async-ring.core/sync->async-middleware wrap-params
-                                              {:parallelism 10
-                                               :buffer-size 100}))
+      (wrap-params {:parallelism 10
+                    :buffer-size 100}))
 
 (def server (http-kit/run-server (async-ring.adapters.to-httpkit async-ring-app)
                                  {:port 8080}))
@@ -159,6 +156,13 @@ possible to control the buffering and parallelism at each stage in the async
 pipeline--this allows you to make decisions such as devoting extra CPU cores
 to encoding/decoding middleware, and limiting the concurrent number of requests
 to a database-backed session store.
+
+Ported middleware lives in `async-ring.middleware`. The
+second argument to the async-ported middleware is always the async options, such
+as parallelism and the buffer size.
+
+If you'd like to see your middlewares ported to Async Ring, just file an issue
+and I'll do that quickly.
 
 ### Using Beauty
 
