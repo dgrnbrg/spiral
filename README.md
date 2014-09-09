@@ -247,6 +247,22 @@ behavior, which allows for greater programmatic insight and control. In Async Ri
 function composition handles chaining behavior, just like in regular Ring.
 1. Compatibility with Ring: in Pedestal, you must either port your Ring middlewares, or deal with the fact that they cannot be paused or migrate threads. In Async Ring, all existing Ring middleware is supported; however, you will get better performance by porting middlewares.
 
+## Performance
+
+Performance numbers are currently only preliminary.
+
+I benchmarked returning the "constant" body via Async Ring, Traditional Ring, and using a callback. All tests were done on http-kit.
+
+|            | Traditional Ring | httpkit async | Async Ring |
+|------------|------------------|---------------|------------|
+| Mean       | 1.45 ms          | 1.542 ms      | 1.953 ms   |
+| 90th %ile  | 2 ms             | 2 ms          | 2 ms       |
+
+Thus Async Ring adds 500 microseconds to each call, but doesn't impact
+outliers significantly. This is something
+I'd like to try to to improve; however, the latency cost is worth it
+if you need these other concurrency features.
+
 ## License
 
 Copyright © 2014 David Greenberg
