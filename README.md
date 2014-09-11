@@ -263,9 +263,9 @@ allows for interceptions to know the entire queue of execution as it stands, at
 the expense of always encoding the request processing as a queue. In Spiral,
 handlers are only identified by their input channel. Thus, Spiral handlers cannot
 automatically know what other executors are in the execution pipeline. On the other
-hand, Spiral handlers can express more complex worker-pool and dynamically routed
-topologies in a single expression, rather than requiring dynamic interceptor
-middleware.
+hand, Spiral handlers allow for async middleware to be written using `<!` and `>!`
+when delegating to a subhandler, rather than needing to explicitly implement
+the state machine.
 1. Chaining behavior: in Pedestal, the interceptor framework handles chaining
 behavior, which allows for greater programmatic insight and control. In Spiral,
 function composition handles chaining behavior, just like in regular Ring.
