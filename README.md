@@ -13,6 +13,10 @@ To use in your Leiningen project, add the following
 [spiral "0.1.0"]
 [http-kit "2.1.19"]
 
+;; For Immutant support
+[spiral "0.?.0"]
+[org.immutant/web "2.0.0-beta3"]
+
 ;; For jetty support
 [spiral "0.1.0"]
 [ring/ring-jetty-adapter "1.3.1"]
@@ -70,9 +74,9 @@ being executed.
 
 ### Integration with standard servers
 
-Spiral comes with adapters for Jetty 7 and http-kit, so that you don't even
-need to change your server code. Just use `to-jetty` or `to-httpkit` to mount
-an async handler onto your existing routing hierarchy.
+Spiral comes with adapters for Jetty 7, Immutant 2, and http-kit, so that you
+don't even need to change your server code. Just use `to-jetty`, `to-immutant`, or
+`to-httpkit` to mount an async handler onto your existing routing hierarchy.
 
 ### Ports of many Ring middleware
 
@@ -133,6 +137,27 @@ Spiral with Jetty.
 Here, we first create a traditional Ring app. Then, we add an adapter to make it
 asynchronous, allowing up to 10 requests to be simultaneously routed and processed,
 and up to 5 requests to be buffered. Finally, we start the Spiral app on Jetty.
+
+And here is the same app again, but using Immutant:
+
+```clojure
+(require '[compojure.core :refer (defroutes GET)])
+(require 'immutant.web)
+(require 'spiral.adapters.immutant)
+(require 'spiral.core)
+
+(defroutes traditional-ring-app
+  (GET "/" []
+    {:body "all ok" :status 200 :headers {"Content-Type" "text/plain"}}))
+
+(def spiral-app
+  (spiral.core/sync->async-adapter traditional-ring-app
+                                       {:parallelism 10
+                                        :buffer-size 5}))
+
+(def server (immutant.web/run (spiral.adapters.immutant/to-immutant spiral-app)
+                              :port 8080))
+```
 
 ### Using Ring middleware
 
