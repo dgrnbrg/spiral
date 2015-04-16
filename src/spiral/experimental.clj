@@ -1,8 +1,8 @@
 (ns spiral.experimental
   "This namespace contains experimental spiral functionality.
-   
+
    work-shed is an async middle that automatically returns short, precomputed responses to clients when the server gets overloaded.
-   
+
    route-concurrently is a simple async routing macro that provides a way to expose concurrency between different routes. Beauty will probably replace it wholesale.
    "
   (:require [clojure.core.async :as async]))
@@ -31,6 +31,15 @@
             (async/>! (:async-response req) shed-response)))))
     req-chan))
 
+(defn- strip-guard-prefix
+  "Strips the guard string from the front of the path, returning the
+   suffix string or nil if the path is nil or the resulting suffix is
+   \"\"."
+  [path guard]
+  (when path
+    (let [suffix (.substring ^String path (count guard))]
+      (when-not (empty? suffix) suffix))))
+
 (defn route-concurrently-
   [pairs]
   (let [req-chan (async/chan)]
@@ -40,12 +49,10 @@
               [guard fwd] (some (fn [[^String guard :as pair]]
                                   (when (.startsWith (:uri req "") guard)
                                     pair))
-                                pairs)
-              uri-suffix (.substring ^String (:uri req) (count guard))
-              uri-suffix (if (= uri-suffix "")
-                           "/"
-                           uri-suffix)]
-          (async/>! fwd (assoc req :uri uri-suffix)))))
+                                pairs)]
+          (async/>! fwd (assoc req
+                          :uri (or (strip-guard-prefix (:uri req) guard) "/")
+                          :path-info (strip-guard-prefix (:path-info req) guard))))))
     req-chan))
 
 (defmacro route-concurrently
