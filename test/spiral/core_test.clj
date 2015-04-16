@@ -4,8 +4,9 @@
    Eventually, this could be split into several test files."
   (:require [clojure.test :refer :all]
             [compojure.core :refer (ANY GET defroutes routes)]
-            [org.httpkit.server :as http-kit]  
+            [org.httpkit.server :as http-kit]
             [org.httpkit.client :as http]
+            [immutant.web :as immutant]
             [hiccup.core :refer (html)]
             [ring.middleware.params :refer (wrap-params)]
             [ring.middleware.file-info :refer (wrap-file-info)]
@@ -13,6 +14,7 @@
             [spiral.beauty :refer :all]
             [spiral.adapters.http-kit :refer :all]
             [spiral.adapters.jetty :refer :all]
+            [spiral.adapters.immutant :refer :all]
             [spiral.experimental :refer :all]
             [spiral.core :refer :all]))
 
@@ -52,7 +54,13 @@
          (try
            ~@body
            (finally
-             (.stop server#)))))))
+             (.stop server#)))))
+     (testing "immutant"
+       (let [server# (immutant/run (to-immutant ~app) :port 12438)]
+         (try
+           ~@body
+           (finally
+             (immutant/stop server#)))))))
 
 (deftest jetty-sync-mode
   (let [server (run-jetty-async (fn [req] {:status 200 :body "sync-hi" :headers {"Content-Type" "text/plain"}}) {:port 12438 :join? false})]
