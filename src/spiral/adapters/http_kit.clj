@@ -31,5 +31,5 @@
                         (clojure.stacktrace/print-cause-trace e)
                         (http-kit/send! http-kit-chan (-> (response (str "Encountered error! See log."))
                                                           (status 500)))
-                        (log/error e))))))))
+                        (log/error e "Encountered unhandled error from spiral httpkit adapapter."))))))))
 
