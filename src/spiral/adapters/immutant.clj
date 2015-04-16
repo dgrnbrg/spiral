@@ -38,4 +38,4 @@
                             (-> (response (str "Encountered error! See log."))
                               (status 500))
                             :close? true)
-                          (log/error e)))))))))
+                          (log/error e "Encountered unhandled error from spiral error channel")))))))))
