@@ -31,7 +31,11 @@
             (async/>! (:async-response req) shed-response)))))
     req-chan))
 
-(defn- strip-guard-prefix [path guard]
+(defn- strip-guard-prefix
+  "Strips the guard string from the front of the path, returning the
+   suffix string or nil if the path is nil or the resulting suffix is
+   \"\"."
+  [path guard]
   (when path
     (let [suffix (.substring ^String path (count guard))]
       (when-not (empty? suffix) suffix))))
