@@ -15,7 +15,7 @@ To use in your Leiningen project, add the following
 
 ;; For Immutant support
 [spiral "0.?.0"]
-[org.immutant/web "2.0.0-beta3"]
+[org.immutant/web "2.0.0"]
 
 ;; For jetty support
 [spiral "0.1.0"]
