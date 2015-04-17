@@ -14,4 +14,4 @@
                                   [compojure "1.1.7"]
                                   [clj-time "0.4.4"]
                                   [http-kit "2.1.19"]
-                                  [org.immutant/web "2.0.0-beta3"]]}})
+                                  [org.immutant/web "2.0.0"]]}})
