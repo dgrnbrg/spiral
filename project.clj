@@ -1,4 +1,4 @@
-(defproject spiral "0.1.1"
+(defproject spiral "0.1.2-SNAPSHOT"
   :description "core.async based http server library"
   :url "http://github.com/dgrnbrg/spiral"
   :license {:name "Eclipse Public License"
